@@ -7,12 +7,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 
-public class FournisseurDaoJdbc implements FournisseurDAO{
+public class FournisseurDaoJdbc2 implements FournisseurDAO {
+
     private String url;
     private String user;
     private Connection conn;
 
-    public FournisseurDaoJdbc() {
+    public FournisseurDaoJdbc2() {
         ResourceBundle config = ResourceBundle.getBundle("database");
 
         this.url = config.getString("db.url");
@@ -29,8 +30,8 @@ public class FournisseurDaoJdbc implements FournisseurDAO{
         List<Fournisseur> result = new ArrayList<>();
         String request = "SELECT * FROM fournisseur";
         try{
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(request);
+            PreparedStatement stmt = conn.prepareStatement(request);
+            ResultSet rs = stmt.executeQuery();
             if(rs != null) {
                 while (rs.next()) {
                     result.add(new Fournisseur(rs.getInt("id"), rs.getString("nom")));
@@ -46,10 +47,10 @@ public class FournisseurDaoJdbc implements FournisseurDAO{
     @Override
     public void insert(Fournisseur fournisseur) {
         StringBuilder sb = new StringBuilder();
-        sb.append("INSERT INTO fournisseur(nom) VALUES ('").append(fournisseur.getNom()).append("');");
+        sb.append("INSERT INTO fournisseur(nom) VALUES (?);");
         try {
-            Statement stmt = conn.createStatement();
-            stmt.executeUpdate(sb.toString());
+            PreparedStatement stmt = conn.prepareStatement(sb.toString());
+            stmt.setString(1,fournisseur.getNom());
             stmt.close();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -60,15 +61,12 @@ public class FournisseurDaoJdbc implements FournisseurDAO{
     public int update(String ancienNom, String nouveauNom) {
         int result = 0;
         StringBuilder sb = new StringBuilder();
-        sb.append("UPDATE fournisseur SET nom = '");
-        sb.append(nouveauNom);
-        sb.append("' WHERE nom = '");
-        sb.append(ancienNom);
-        sb.append("';");
-        System.out.println(sb.toString());
+        sb.append("UPDATE fournisseur SET nom = ? WHERE nom = ?;");
         try {
-            Statement stmt = conn.createStatement();
-            result = stmt.executeUpdate(sb.toString());
+            PreparedStatement stmt = conn.prepareStatement(sb.toString());
+            stmt.setString(1, ancienNom);
+            stmt.setString(2, nouveauNom);
+            result = stmt.executeUpdate();
             stmt.close();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -80,11 +78,11 @@ public class FournisseurDaoJdbc implements FournisseurDAO{
     public boolean delete(Fournisseur fournisseur) {
         boolean result = false;
         StringBuilder sb = new StringBuilder();
-        sb.append("DELETE FROM fournisseur WHERE nom = '");
-        sb.append(fournisseur.getNom()).append("';");
+        sb.append("DELETE FROM fournisseur WHERE nom = ?;");
         try {
-            Statement stmt = conn.createStatement();
-            result = stmt.executeUpdate(sb.toString())>0;
+            PreparedStatement stmt = conn.prepareStatement(sb.toString());
+            stmt.setString(1, fournisseur.getNom());
+            result = stmt.execute();
             stmt.close();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -92,3 +90,4 @@ public class FournisseurDaoJdbc implements FournisseurDAO{
         return result;
     }
 }
+
